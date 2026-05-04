@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@source "../**/*.{js,ts,jsx,tsx,mdx}";
+
+:root {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.g-shell {
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, #1f293733, transparent 45%), #09090b;
+  color: #f4f4f5;
+}
+
+.g-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid #27272a;
+  backdrop-filter: blur(8px);
+  background: #09090be6;
+}
+
+.g-container {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.g-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.g-title {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.g-muted {
+  color: #a1a1aa;
+}
+
+.g-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: #052e24;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0.7rem 1rem;
+}
+
+.g-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 12px;
+  border: 1px solid #3f3f46;
+  background: #18181bcc;
+  color: #f4f4f5;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.7rem 1rem;
+}
+
+.g-card {
+  border: 1px solid #27272a;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #18181bcc, #0f0f12d9);
+  padding: 1rem;
+}
+
+.g-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.g-input {
+  width: 100%;
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  background: #09090bcc;
+  color: #fafafa;
+  padding: 0.7rem 0.8rem;
+}
+
+.g-input:focus {
+  outline: 2px solid #10b98166;
+  border-color: #10b981;
+}
+
+.g-form-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+  color: #a1a1aa;
+}
+
+.g-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.9rem;
+}
+
+.g-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 900px) {
+  .g-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
