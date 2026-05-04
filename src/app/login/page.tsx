@@ -61,7 +61,7 @@ export default function LoginPage() {
         <div style={{ marginTop: "0.8rem" }}>
           <h1 className="font-display" style={{ margin: 0, fontSize: "1.65rem" }}>Staff sign in</h1>
           <p className="g-muted" style={{ marginTop: "0.28rem", fontSize: "0.9rem" }}>
-            Seeded login: ggec@gmail.com / Anubhav@123
+            Use authorized center-management credentials.
           </p>
         </div>
         <form onSubmit={handleSubmit} style={{ marginTop: "1rem", display: "grid", gap: "0.8rem" }}>

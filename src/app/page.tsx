@@ -14,89 +14,117 @@ export default function Home() {
           <span className="font-display" style={{ color: "#34d399", fontSize: "1.1rem", fontWeight: 700 }}>
             GGEC Gaming Center
           </span>
-          <Link
-            href="/login"
-            className="g-btn-primary"
-          >
+          <Link href="/login" className="g-btn-primary">
             Center management login
           </Link>
         </div>
       </header>
 
-      <main className="g-container" style={{ padding: "1.4rem 0 2.2rem" }}>
-        <section className="g-grid-2" style={{ alignItems: "stretch" }}>
-          <div className="g-card" style={{ overflow: "hidden", padding: 0 }}>
+      <main className="g-container" style={{ paddingBottom: "2rem" }}>
+        <section className="g-hero">
+          <div className="g-card" style={{ padding: "1.35rem" }}>
+            <p className="g-eyebrow">Premium gaming lounge</p>
+            <h1 className="font-display g-title" style={{ marginTop: "0.65rem" }}>
+              Golden Gate Entertainment Center
+            </h1>
+            <p className="g-lead">
+              Console and PC stations with fair pricing, fast billing, and a smooth customer
+              experience. Walk in, pick your setup, and start playing in minutes.
+            </p>
+
+            <div className="g-actions">
+              <Link href="/login" className="g-btn-primary">
+                Book staff desk
+              </Link>
+              <a href="#experience" className="g-btn-ghost">
+                See customer experience
+              </a>
+            </div>
+
+            <div className="g-stat-grid">
+              <div className="g-stat-box">
+                <p className="g-stat-label">Platforms</p>
+                <p className="g-stat-value">PS2 to PS5 + PC</p>
+              </div>
+              <div className="g-stat-box">
+                <p className="g-stat-label">Session flexibility</p>
+                <p className="g-stat-value">Hourly billing</p>
+              </div>
+              <div className="g-stat-box">
+                <p className="g-stat-label">Peak handling</p>
+                <p className="g-stat-value">Counter ready</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="g-hero-visual">
             <Image
               src={hero}
               alt="Gaming setup with controller and ambient lighting"
               priority
-              width={900}
-              height={580}
-              style={{ width: "100%", height: "100%", objectFit: "cover", minHeight: 320 }}
-              sizes="(max-width: 1024px) 100vw, 50vw"
+              width={960}
+              height={680}
+              style={{ width: "100%", height: "100%", objectFit: "cover", minHeight: 360 }}
+              sizes="(max-width: 1024px) 100vw, 42vw"
             />
           </div>
-          <div className="g-card" style={{ padding: "1.5rem 1.4rem" }}>
-            <p style={{ margin: 0, color: "#34d399", letterSpacing: "0.18em", fontSize: "0.74rem", textTransform: "uppercase", fontWeight: 700 }}>
-              Gaming zone
-            </p>
-            <h1 className="font-display g-title" style={{ marginTop: "0.7rem" }}>
-              Golden Gate
-              <br />
-              Entertainment Center
-            </h1>
-            <p className="g-muted" style={{ marginTop: "0.9rem", maxWidth: 560, lineHeight: 1.6 }}>
-              PS2 through PS5 and high-spec PC stations. Fair hourly pricing, quick billing for
-              staff, and a dashboard for what your players love most.
-            </p>
-            <ul className="g-list" style={{ marginTop: "1rem", display: "grid", gap: "0.55rem", color: "#d4d4d8", fontSize: "0.93rem" }}>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: "#34d399", display: "inline-block" }} />
-                Console lanes + PC &quot;system&quot; booths
-              </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: "#34d399", display: "inline-block" }} />
-                Auto-calculated bills by duration
-              </li>
-              <li style={{ display: "flex", alignItems: "center", gap: "0.55rem" }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: "#34d399", display: "inline-block" }} />
-                Peak hours, top games &amp; localities
-              </li>
-            </ul>
-            <Link
-              href="/login"
-              className="g-btn-ghost font-display"
-              style={{ marginTop: "1.15rem" }}
-            >
-              Open center management
-              <span aria-hidden>→</span>
+        </section>
+
+        <section id="experience" className="g-card" style={{ marginTop: "0.2rem" }}>
+          <p className="g-eyebrow">Why players return</p>
+          <h2 className="font-display" style={{ margin: "0.55rem 0 0", fontSize: "1.55rem" }}>
+            Comfortable setup. Transparent pricing. Reliable sessions.
+          </h2>
+          <div className="g-feature-grid">
+            <article className="g-feature-card">
+              <h3>High comfort stations</h3>
+              <p>
+                Dedicated console lanes and optimized PC booths designed for longer sessions and
+                smoother multiplayer gameplay.
+              </p>
+            </article>
+            <article className="g-feature-card">
+              <h3>Fair and clear billing</h3>
+              <p>
+                Hour-based pricing with exact duration tracking so every customer bill stays clear,
+                consistent, and easy to trust.
+              </p>
+            </article>
+            <article className="g-feature-card">
+              <h3>Fast counter operations</h3>
+              <p>
+                Staff can quickly start sessions, create bills, and review top games and peak
+                windows without slowing down service.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section className="g-cta-strip">
+          <h2 className="font-display">Planning your next gaming session?</h2>
+          <p>
+            Visit GGEC for console classics, modern titles, and smooth local multiplayer setups.
+            Staff can access desk controls from the center-management login.
+          </p>
+          <div className="g-actions" style={{ marginTop: "0.9rem" }}>
+            <Link href="/login" className="g-btn-primary">
+              Open staff console
             </Link>
           </div>
         </section>
 
-        <section className="g-grid-2" style={{ marginTop: "1rem" }}>
-          <div className="g-card" style={{ overflow: "hidden", padding: 0 }}>
-            <div style={{ minHeight: 260 }}>
-              <Image
-                src={side}
-                alt="Esports and multiplayer gaming atmosphere"
-                width={900}
-                height={620}
-                style={{ width: "100%", height: "100%", objectFit: "cover", minHeight: 260 }}
-                sizes="(max-width: 640px) 100vw, 50vw"
-              />
-            </div>
-          </div>
-          <div className="g-card" style={{ display: "grid", alignContent: "center", gap: "0.7rem" }}>
-            <h2 className="font-display" style={{ margin: 0, fontSize: "1.3rem" }}>Built for busy sessions</h2>
-            <p className="g-muted" style={{ margin: 0, lineHeight: 1.6 }}>
-              Track every visit with name, phone, locality, station type, and play time.
-              Stats stay on this browser so you can run counter operations fast.
-            </p>
-          </div>
-        </section>
+        <div className="g-card" style={{ marginTop: "1rem", overflow: "hidden", padding: 0 }}>
+          <Image
+            src={side}
+            alt="Esports and multiplayer gaming atmosphere"
+            width={1200}
+            height={460}
+            style={{ width: "100%", height: "100%", objectFit: "cover", minHeight: 220, maxHeight: 320 }}
+            sizes="100vw"
+          />
+        </div>
 
-        <footer style={{ marginTop: "1.4rem", padding: "1rem 0", borderTop: "1px solid #27272a", textAlign: "center", color: "#71717a", fontSize: "0.78rem" }}>
+        <footer className="g-footer">
           GGEC · Photos via Unsplash (replace with your own assets anytime)
         </footer>
       </main>
