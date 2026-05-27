@@ -1,156 +1,130 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useApp } from "@/components/providers/app-providers";
+import { CustomerSelectDropdown } from "@/components/staff/customer-search";
 import type { GameType } from "@/lib/types";
-import { computeAmount, GAME_LABELS, ratePerHour } from "@/lib/pricing";
+import { GAME_LABELS } from "@/lib/pricing";
 
 const inputClass = "g-input";
-
 const GAMES: GameType[] = ["ps2", "ps3", "ps4", "ps5", "system"];
 
 export default function CreateBillPage() {
-  const router = useRouter();
-  const { addBill } = useApp();
-  const [customerName, setCustomerName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [locality, setLocality] = useState("");
+  const { customers, activeSessions, startSession } = useApp();
+  const [customerId, setCustomerId] = useState("");
   const [gameType, setGameType] = useState<GameType>("ps5");
-  const [durationHours, setDurationHours] = useState("1");
-  const [submitted, setSubmitted] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
 
-  const hoursNum = useMemo(() => {
-    const n = parseFloat(durationHours.replace(",", "."));
-    return Number.isFinite(n) && n >= 0 ? n : 0;
-  }, [durationHours]);
+  const availableCustomers = useMemo(() => {
+    const activeIds = new Set(activeSessions.map((s) => s.customerId));
+    return customers
+      .filter((c) => !activeIds.has(c.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [customers, activeSessions]);
 
-  const previewAmount = useMemo(
-    () => computeAmount(gameType, hoursNum),
-    [gameType, hoursNum]
-  );
-
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleStart(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!customerName.trim() || !phone.trim()) return;
+    setSuccess(null);
+    if (!customerId) {
+      setError("Select a customer profile to start.");
+      return;
+    }
+    setStarting(true);
     try {
-      const bill = await addBill({
-        customerName,
-        phone,
-        locality,
-        gameType,
-        durationHours: hoursNum,
-      });
-      setSubmitted(
-        `Bill saved: ${GAME_LABELS[gameType]}, ${hoursNum} hr -> Rs ${bill.amount.toFixed(2)}`
-      );
-      setCustomerName("");
-      setPhone("");
-      setLocality("");
-      setDurationHours("1");
+      await startSession({ customerId, gameType });
+      setCustomerId("");
       setGameType("ps5");
-      router.refresh();
+      setSuccess("Session started. Manage it from Active sessions.");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to save bill in MongoDB.";
-      setError(message);
+      setError(err instanceof Error ? err.message : "Unable to start session.");
+    } finally {
+      setStarting(false);
     }
   }
 
   return (
-    <div style={{ width: "min(760px, 100%)", display: "grid", gap: "1rem" }}>
+    <div style={{ display: "grid", gap: "1rem", maxWidth: 760 }}>
       <div>
-        <h1 className="font-display" style={{ margin: 0, fontSize: "1.7rem" }}>Create bill</h1>
+        <h1 className="font-display" style={{ margin: 0, fontSize: "1.7rem" }}>
+          Start session
+        </h1>
         <p className="g-muted" style={{ marginTop: "0.35rem", fontSize: "0.92rem" }}>
-          Rates: PS2 Rs 100/hr, then +Rs 50 per generation up to PS5. PC/System Rs 150/hr.
+          Pick a customer and station to begin. Timer and food orders are handled on{" "}
+          <Link href="/active-sessions" style={{ color: "#34d399", textDecoration: "none" }}>
+            Active sessions
+          </Link>
+          .
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="g-card"
-        style={{ display: "grid", gap: "0.95rem" }}
-      >
-        <div className="g-grid-2">
-          <Field label="Customer name">
-            <input
-              required
-              className={inputClass}
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Full name"
-              autoComplete="name"
-            />
-          </Field>
-          <Field label="Phone number">
-            <input
-              required
-              className={inputClass}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 …"
-              inputMode="tel"
-              autoComplete="tel"
-            />
-          </Field>
+      {!customers.length ? (
+        <div className="g-card" style={{ padding: "1.5rem", textAlign: "center" }}>
+          <p className="g-muted" style={{ margin: 0 }}>
+            No customer profiles yet.{" "}
+            <Link href="/customers" style={{ color: "#34d399", textDecoration: "none" }}>
+              Create a profile
+            </Link>{" "}
+            before starting a session.
+          </p>
         </div>
+      ) : (
+        <form onSubmit={handleStart} className="g-card" style={{ display: "grid", gap: "0.95rem" }}>
+          <Field label="Customer profile">
+            <CustomerSelectDropdown
+              customers={availableCustomers}
+              selectedId={customerId}
+              onSelect={setCustomerId}
+              disabled={availableCustomers.length === 0}
+              placeholder={
+                availableCustomers.length === 0
+                  ? "All customers have active sessions"
+                  : "Select customer…"
+              }
+              emptyMessage={
+                availableCustomers.length === 0
+                  ? "All customers currently have active sessions."
+                  : "No customers match your search."
+              }
+            />
+          </Field>
 
-        <Field label="Locality / area">
-          <input
-            className={inputClass}
-            value={locality}
-            onChange={(e) => setLocality(e.target.value)}
-            placeholder="Neighborhood"
-          />
-        </Field>
+          <Field label="Game station">
+            <select
+              className={inputClass}
+              value={gameType}
+              onChange={(e) => setGameType(e.target.value as GameType)}
+            >
+              {GAMES.map((g) => (
+                <option key={g} value={g}>
+                  {GAME_LABELS[g]}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-        <Field label="Game / station">
-          <select
-            className={inputClass}
-            value={gameType}
-            onChange={(e) => setGameType(e.target.value as GameType)}
-          >
-            {GAMES.map((g) => (
-              <option key={g} value={g}>
-                {GAME_LABELS[g]} - Rs {ratePerHour(g)}/hr
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Duration (hours)">
-          <input
-            required
-            min={0}
-            step="0.25"
-            type="number"
-            className={inputClass}
-            value={durationHours}
-            onChange={(e) => setDurationHours(e.target.value)}
-          />
-        </Field>
-
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", justifyContent: "space-between", gap: "0.75rem", borderRadius: 12, background: "#09090bcc", padding: "0.85rem" }}>
           <div>
-            <p style={{ margin: 0, fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", color: "#a1a1aa", letterSpacing: "0.06em" }}>Amount due</p>
-            <p style={{ margin: "0.2rem 0 0", fontSize: "1.5rem", fontWeight: 700, color: "#34d399" }}>
-              Rs {previewAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
+            <button
+              type="submit"
+              className="g-btn-primary"
+              style={{ cursor: "pointer" }}
+              disabled={starting || !availableCustomers.length || !customerId}
+            >
+              {starting ? "Starting…" : "Start session"}
+            </button>
           </div>
-          <button
-            type="submit"
-            className="g-btn-primary"
-            style={{ cursor: "pointer" }}
-          >
-            Save bill
-          </button>
-        </div>
-      </form>
+        </form>
+      )}
 
-      {submitted ? (
+      {success ? (
         <p style={{ margin: 0, borderRadius: 12, border: "1px solid #14532d", background: "#052e16", color: "#bbf7d0", padding: "0.7rem 0.85rem", fontSize: "0.9rem" }}>
-          {submitted}
+          {success}{" "}
+          <Link href="/active-sessions" style={{ color: "#86efac", fontWeight: 600 }}>
+            Go to Active sessions →
+          </Link>
         </p>
       ) : null}
       {error ? (
@@ -162,13 +136,7 @@ export default function CreateBillPage() {
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label>
       <span className="g-form-label">{label}</span>

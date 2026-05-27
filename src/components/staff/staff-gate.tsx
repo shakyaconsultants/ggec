@@ -4,18 +4,24 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useApp } from "@/components/providers/app-providers";
 
-export function StaffGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useApp();
+export function AdminGate({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isAdmin } = useApp();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) router.replace("/login");
-  }, [isAuthenticated, router]);
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+    if (!isAdmin) {
+      router.replace("/my-profile");
+    }
+  }, [isAuthenticated, isAdmin, router]);
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-zinc-500 text-sm">
-        Redirecting to sign in…
+        Redirecting…
       </div>
     );
   }

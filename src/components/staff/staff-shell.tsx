@@ -2,48 +2,43 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { useApp } from "@/components/providers/app-providers";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/create-bill", label: "Create bill" },
+  { href: "/active-sessions", label: "Active sessions", showLiveCount: true },
+  { href: "/create-bill", label: "Start session" },
+  { href: "/customers", label: "Customers" },
+  { href: "/food", label: "Food menu" },
 ];
 
 export function StaffShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useApp();
+  const { logout, activeSessions } = useApp();
+  const liveCount = activeSessions.length;
 
   return (
     <div className="g-shell">
       <header className="g-header">
         <div className="g-container g-row" style={{ minHeight: 58 }}>
-          <Link
-            href="/dashboard"
-            className="font-display"
-            style={{ color: "#34d399", textDecoration: "none", fontWeight: 700 }}
-          >
-            GGEC
-          </Link>
-          <nav style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-            {nav.map(({ href, label }) => {
-              const active = pathname === href;
+          <BrandLogo href="/dashboard" size="md" showTagline />
+          <nav className="g-staff-nav">
+            {nav.map(({ href, label, showLiveCount }) => {
+              const active =
+                pathname === href ||
+                (href === "/customers" && pathname.startsWith("/customers"));
               return (
                 <Link
                   key={href}
                   href={href}
-                  style={{
-                    borderRadius: 10,
-                    padding: "0.45rem 0.75rem",
-                    textDecoration: "none",
-                    fontSize: "0.88rem",
-                    fontWeight: 600,
-                    background: active ? "#27272a" : "transparent",
-                    color: active ? "#fafafa" : "#a1a1aa",
-                    border: active ? "1px solid #3f3f46" : "1px solid transparent",
-                  }}
+                  className={`g-staff-nav-link${active ? " is-active" : ""}`}
                 >
                   {label}
+                  {showLiveCount && liveCount > 0 ? (
+                    <span className="g-nav-badge">{liveCount}</span>
+                  ) : null}
                 </Link>
               );
             })}
@@ -53,16 +48,7 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
                 logout();
                 router.push("/login");
               }}
-              style={{
-                borderRadius: 10,
-                padding: "0.45rem 0.75rem",
-                border: "1px solid transparent",
-                background: "transparent",
-                color: "#a1a1aa",
-                fontSize: "0.88rem",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
+              className="g-staff-nav-link g-staff-nav-signout"
             >
               Sign out
             </button>

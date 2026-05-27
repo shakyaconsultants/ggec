@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyStaffLogin } from "@/lib/server-auth";
+import { verifyLogin } from "@/lib/server-auth";
 
 type LoginBody = {
   username?: string;
@@ -14,20 +14,20 @@ export async function POST(req: Request) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { ok: false, message: "Username and password are required." },
+        { ok: false, message: "Email and password are required." },
         { status: 400 }
       );
     }
 
-    const ok = await verifyStaffLogin(username, password);
-    if (!ok) {
+    const user = await verifyLogin(username, password);
+    if (!user) {
       return NextResponse.json(
         { ok: false, message: "Invalid email or password." },
         { status: 401 }
       );
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, user });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login failed.";
     return NextResponse.json({ ok: false, message }, { status: 500 });

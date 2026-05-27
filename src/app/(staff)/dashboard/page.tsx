@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useApp } from "@/components/providers/app-providers";
 import {
+  completedBills,
   mostPlayedGame,
   peakDaysOfWeek,
   peakHours,
@@ -19,7 +21,9 @@ function formatHour(h: number): string {
 }
 
 export default function DashboardPage() {
-  const { bills } = useApp();
+  const { bills, activeSessions } = useApp();
+
+  const completed = useMemo(() => completedBills(bills), [bills]);
 
   const stats = useMemo(() => {
     const played = mostPlayedGame(bills);
@@ -38,14 +42,22 @@ export default function DashboardPage() {
       <div>
         <h1 className="font-display" style={{ margin: 0, fontSize: "1.7rem" }}>Dashboard</h1>
         <p className="g-muted" style={{ marginTop: "0.35rem", fontSize: "0.92rem" }}>
-          Insights from saved bills on this device. Add bills from{" "}
-          <span style={{ color: "#f4f4f5" }}>Create bill</span>.
+          Business insights from completed sessions.
+          {activeSessions.length > 0 ? (
+            <>
+              {" "}
+              <Link href="/active-sessions" style={{ color: "#34d399", textDecoration: "none" }}>
+                {activeSessions.length} live session{activeSessions.length === 1 ? "" : "s"}
+              </Link>{" "}
+              running now.
+            </>
+          ) : null}
         </p>
       </div>
 
-      {!bills.length ? (
+      {!completed.length ? (
         <div className="g-card" style={{ padding: "2rem", textAlign: "center", color: "#a1a1aa" }}>
-          No bills yet. Create one to see stats here.
+          No completed sessions yet. Start and end sessions to see revenue stats here.
         </div>
       ) : (
         <>
@@ -53,15 +65,11 @@ export default function DashboardPage() {
             <StatCard
               title="Total revenue"
               value={`Rs ${stats.revenue.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`}
-              hint={`${bills.length} bill${bills.length === 1 ? "" : "s"}`}
+              hint={`${completed.length} completed session${completed.length === 1 ? "" : "s"}`}
             />
             <StatCard
               title="Most played"
-              value={
-                stats.played
-                  ? GAME_LABELS[stats.played.game]
-                  : "—"
-              }
+              value={stats.played ? GAME_LABELS[stats.played.game] : "—"}
               hint={stats.played ? `${stats.played.count} sessions` : ""}
             />
             <StatCard
@@ -87,7 +95,9 @@ export default function DashboardPage() {
           <section className="g-grid-2">
             <div className="g-card">
               <h2 style={{ margin: 0, fontSize: "0.95rem", color: "#d4d4d8" }}>Peak hours</h2>
-              <p className="g-muted" style={{ margin: "0.15rem 0 0", fontSize: "0.78rem" }}>Bills grouped by start time (hour of day)</p>
+              <p className="g-muted" style={{ margin: "0.15rem 0 0", fontSize: "0.78rem" }}>
+                Sessions grouped by start time (hour of day)
+              </p>
               <ul className="g-list" style={{ marginTop: "0.9rem", display: "grid", gap: "0.5rem" }}>
                 {stats.hours.slice(0, 8).map((row) => (
                   <li key={row.hour} style={{ display: "flex", alignItems: "center", gap: "0.55rem", fontSize: "0.85rem" }}>
@@ -98,7 +108,7 @@ export default function DashboardPage() {
                           height: "100%",
                           borderRadius: 999,
                           background: "#10b981",
-                          width: `${stats.maxDayCount ? (row.count / stats.maxDayCount) * 100 : 0}%`,
+                          width: `${stats.maxHourCount ? (row.count / stats.maxHourCount) * 100 : 0}%`,
                         }}
                       />
                     </div>
@@ -113,7 +123,7 @@ export default function DashboardPage() {
 
             <div className="g-card">
               <h2 style={{ margin: 0, fontSize: "0.95rem", color: "#d4d4d8" }}>Peak days</h2>
-              <p className="g-muted" style={{ margin: "0.15rem 0 0", fontSize: "0.78rem" }}>Bills by weekday</p>
+              <p className="g-muted" style={{ margin: "0.15rem 0 0", fontSize: "0.78rem" }}>Sessions by weekday</p>
               <ul className="g-list" style={{ marginTop: "0.9rem", display: "grid", gap: "0.5rem" }}>
                 {stats.days.slice(0, 7).map((row) => (
                   <li key={row.dayIndex} style={{ display: "flex", alignItems: "center", gap: "0.55rem", fontSize: "0.85rem" }}>
@@ -124,7 +134,7 @@ export default function DashboardPage() {
                           height: "100%",
                           borderRadius: 999,
                           background: "#8b5cf6",
-                          width: `${stats.maxHourCount ? (row.count / stats.maxHourCount) * 100 : 0}%`,
+                          width: `${stats.maxDayCount ? (row.count / stats.maxDayCount) * 100 : 0}%`,
                         }}
                       />
                     </div>

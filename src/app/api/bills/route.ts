@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import type { GameType } from "@/lib/types";
-import { createBill, listBills } from "@/lib/server-bills";
+import { endSession, listBills, startSession } from "@/lib/server-bills";
 
-type CreateBillBody = {
-  customerName?: string;
-  phone?: string;
-  locality?: string;
+type StartSessionBody = {
+  customerId?: string;
   gameType?: GameType;
-  durationHours?: number;
 };
 
 export async function GET() {
@@ -22,22 +19,20 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as CreateBillBody;
-    if (!body.customerName || !body.phone || !body.gameType || body.durationHours == null) {
-      return NextResponse.json({ message: "Missing required fields." }, { status: 400 });
+    const body = (await req.json()) as StartSessionBody;
+    if (!body.customerId || !body.gameType) {
+      return NextResponse.json({ message: "Customer and game station are required." }, { status: 400 });
     }
 
-    const bill = await createBill({
-      customerName: body.customerName,
-      phone: body.phone,
-      locality: body.locality ?? "",
+    const bill = await startSession({
+      customerId: body.customerId,
       gameType: body.gameType,
-      durationHours: Number(body.durationHours),
     });
 
     return NextResponse.json({ bill }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create bill.";
-    return NextResponse.json({ message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to start session.";
+    const status = message.includes("not found") ? 404 : message.includes("already has") ? 409 : 500;
+    return NextResponse.json({ message }, { status });
   }
 }

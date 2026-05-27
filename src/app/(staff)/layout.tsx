@@ -1,6 +1,6 @@
 "use client";
 
-import { StaffGate } from "@/components/staff/staff-gate";
+import { AdminGate } from "@/components/staff/staff-gate";
 import { StaffShell } from "@/components/staff/staff-shell";
 
 export default function StaffLayout({
@@ -9,8 +9,8 @@ export default function StaffLayout({
   children: React.ReactNode;
 }) {
   return (
-    <StaffGate>
+    <AdminGate>
       <StaffShell>{children}</StaffShell>
-    </StaffGate>
+    </AdminGate>
   );
 }

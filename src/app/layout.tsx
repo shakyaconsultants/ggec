@@ -14,8 +14,13 @@ const sans = DM_Sans({
 });
 
 export const metadata = {
-  title: "GGEC — Gaming Zone",
-  description: "Golden Gate Entertainment Center — console & PC gaming, billing, and stats.",
+  title: "GGEZZ — Premium Gaming Cafe",
+  description:
+    "GGEZZ Gaming Cafe — PS2 to PS5 stations, PC booths, cafe menu, smart billing, and member profiles.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -26,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${sans.variable} h-full antialiased`}
+      className={`${display.variable} ${sans.variable} h-full antialiased scroll-smooth`}
     >
       <body className="min-h-full flex flex-col font-sans bg-zinc-950 text-zinc-100">
         <AppProviders>{children}</AppProviders>
