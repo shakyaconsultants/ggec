@@ -1,4 +1,5 @@
-import type { Bill, GameType } from "./types";
+import type { Bill } from "./types";
+import { getBillStationKey, getStationLabel } from "./catalog";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -14,22 +15,23 @@ function billTime(b: Bill): Date {
   return new Date(b.startedAt || b.createdAt);
 }
 
-export function mostPlayedGame(bills: Bill[]): { game: GameType; count: number } | null {
+export function mostPlayedStation(bills: Bill[]): { station: string; count: number } | null {
   const done = completedBills(bills);
   if (!done.length) return null;
-  const counts = new Map<GameType, number>();
+  const counts = new Map<string, { label: string; count: number }>();
   for (const b of done) {
-    counts.set(b.gameType, (counts.get(b.gameType) ?? 0) + 1);
+    const key = getBillStationKey(b);
+    const cur = counts.get(key) ?? { label: getStationLabel(b), count: 0 };
+    cur.count += 1;
+    counts.set(key, cur);
   }
-  let best: GameType = done[0].gameType;
-  let max = 0;
-  for (const [g, n] of counts) {
-    if (n > max) {
-      max = n;
-      best = g;
+  let best = { station: getStationLabel(done[0]), count: 0 };
+  for (const { label, count } of counts.values()) {
+    if (count > best.count) {
+      best = { station: label, count };
     }
   }
-  return { game: best, count: max };
+  return best.count > 0 ? best : null;
 }
 
 export function peakHours(bills: Bill[]): { hour: number; count: number }[] {

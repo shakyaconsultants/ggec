@@ -15,7 +15,7 @@ import {
   isUser as checkIsUser,
   parseAuthSession,
 } from "@/lib/auth";
-import type { Bill, Customer, FoodItem, GameType } from "@/lib/types";
+import type { Bill, CatalogItem, CatalogItemKind, Customer, FoodItem } from "@/lib/types";
 import { activeBills as filterActiveBills } from "@/lib/analytics";
 
 type AppContextValue = {
@@ -23,6 +23,9 @@ type AppContextValue = {
   activeSessions: Bill[];
   customers: Customer[];
   menuItems: FoodItem[];
+  catalogItems: CatalogItem[];
+  gamingStations: CatalogItem[];
+  techServices: CatalogItem[];
   authUser: AuthSession | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -44,12 +47,25 @@ type AppContextValue = {
   deleteCustomer: (id: string) => Promise<void>;
   addMenuItem: (input: { name: string; price: number }) => Promise<FoodItem>;
   deleteMenuItem: (id: string) => Promise<void>;
-  startSession: (input: { customerId: string; gameType: GameType }) => Promise<Bill>;
+  addCatalogItem: (input: {
+    name: string;
+    price?: number;
+    kind: CatalogItemKind;
+    specs?: string;
+  }) => Promise<CatalogItem>;
+  deleteCatalogItem: (id: string) => Promise<void>;
+  startSession: (input: {
+    customerId: string;
+    stationId: string;
+    extraSpecs?: string;
+    techItemIds?: string[];
+  }) => Promise<Bill>;
   endSession: (billId: string) => Promise<Bill>;
   addFoodToSession: (billId: string, foodIds: string | string[]) => Promise<Bill>;
   refreshBills: () => Promise<void>;
   refreshCustomers: () => Promise<void>;
   refreshMenuItems: () => Promise<void>;
+  refreshCatalogItems: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -68,6 +84,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const [bills, setBills] = useState<Bill[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [menuItems, setMenuItems] = useState<FoodItem[]>([]);
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [authUser, setAuthUser] = useState<AuthSession | null>(null);
 
@@ -92,18 +109,26 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     setMenuItems(Array.isArray(data.items) ? data.items : []);
   }, []);
 
+  const refreshCatalogItems = useCallback(async () => {
+    const res = await fetch("/api/catalog", { cache: "no-store" });
+    if (!res.ok) throw new Error("Unable to load games and tech catalog.");
+    const data = (await res.json()) as { items?: CatalogItem[] };
+    setCatalogItems(Array.isArray(data.items) ? data.items : []);
+  }, []);
+
   useEffect(() => {
     const legacy = localStorage.getItem("ggec_staff_session");
     const raw = localStorage.getItem(SESSION_KEY) ?? (legacy === "1" ? "1" : null);
     setAuthUser(parseAuthSession(raw));
-    Promise.all([refreshBills(), refreshCustomers(), refreshMenuItems()])
+    Promise.all([refreshBills(), refreshCustomers(), refreshMenuItems(), refreshCatalogItems()])
       .catch(() => {
         setBills([]);
         setCustomers([]);
         setMenuItems([]);
+        setCatalogItems([]);
       })
       .finally(() => setHydrated(true));
-  }, [refreshBills, refreshCustomers, refreshMenuItems]);
+  }, [refreshBills, refreshCustomers, refreshMenuItems, refreshCatalogItems]);
 
   const login = useCallback(
     async (username: string, password: string) => {
@@ -117,10 +142,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       if (!data.user) return null;
       persistSession(data.user);
       setAuthUser(data.user);
-      await Promise.all([refreshBills(), refreshCustomers(), refreshMenuItems()]).catch(() => {});
+      await Promise.all([
+        refreshBills(),
+        refreshCustomers(),
+        refreshMenuItems(),
+        refreshCatalogItems(),
+      ]).catch(() => {});
       return data.user;
     },
-    [refreshBills, refreshCustomers, refreshMenuItems]
+    [refreshBills, refreshCustomers, refreshMenuItems, refreshCatalogItems]
   );
 
   const logout = useCallback(() => {
@@ -230,26 +260,78 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     setMenuItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const startSession = useCallback(async (input: { customerId: string; gameType: GameType }) => {
-    const res = await fetch("/api/bills", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(input),
-    });
+  const addCatalogItem = useCallback(
+    async (input: {
+      name: string;
+      price?: number;
+      kind: CatalogItemKind;
+      specs?: string;
+    }) => {
+      const res = await fetch("/api/catalog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        let message = "Unable to create catalog item.";
+        try {
+          const data = (await res.json()) as { message?: string };
+          if (data.message) message = data.message;
+        } catch {}
+        throw new Error(message);
+      }
+      const data = (await res.json()) as { item?: CatalogItem };
+      const item = data.item;
+      if (!item) throw new Error("Invalid response while creating catalog item.");
+      setCatalogItems((prev) =>
+        [...prev, item].sort((a, b) => a.kind.localeCompare(b.kind) || a.name.localeCompare(b.name))
+      );
+      return item;
+    },
+    []
+  );
+
+  const deleteCatalogItem = useCallback(async (id: string) => {
+    const res = await fetch(`/api/catalog/${id}`, { method: "DELETE" });
     if (!res.ok) {
-      let message = "Unable to start session.";
+      let message = "Unable to delete catalog item.";
       try {
         const data = (await res.json()) as { message?: string };
         if (data.message) message = data.message;
       } catch {}
       throw new Error(message);
     }
-    const data = (await res.json()) as { bill?: Bill };
-    const bill = data.bill;
-    if (!bill) throw new Error("Invalid response while starting session.");
-    setBills((prev) => [bill, ...prev]);
-    return bill;
+    setCatalogItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
+
+  const startSession = useCallback(
+    async (input: {
+      customerId: string;
+      stationId: string;
+      extraSpecs?: string;
+      techItemIds?: string[];
+    }) => {
+      const res = await fetch("/api/bills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        let message = "Unable to start session.";
+        try {
+          const data = (await res.json()) as { message?: string };
+          if (data.message) message = data.message;
+        } catch {}
+        throw new Error(message);
+      }
+      const data = (await res.json()) as { bill?: Bill };
+      const bill = data.bill;
+      if (!bill) throw new Error("Invalid response while starting session.");
+      setBills((prev) => [bill, ...prev]);
+      return bill;
+    },
+    []
+  );
 
   const addFoodToSession = useCallback(async (billId: string, foodIds: string | string[]) => {
     const ids = Array.isArray(foodIds) ? foodIds : [foodIds];
@@ -292,6 +374,14 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   }, [refreshCustomers]);
 
   const activeSessions = useMemo(() => filterActiveBills(bills), [bills]);
+  const gamingStations = useMemo(
+    () => catalogItems.filter((item) => item.kind === "gaming_station"),
+    [catalogItems]
+  );
+  const techServices = useMemo(
+    () => catalogItems.filter((item) => item.kind === "tech_service"),
+    [catalogItems]
+  );
   const isAuthenticated = authUser !== null;
   const isAdmin = checkIsAdmin(authUser);
   const isUser = checkIsUser(authUser);
@@ -302,6 +392,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       activeSessions,
       customers,
       menuItems,
+      catalogItems,
+      gamingStations,
+      techServices,
       authUser,
       isAuthenticated,
       isAdmin,
@@ -313,18 +406,24 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       deleteCustomer,
       addMenuItem,
       deleteMenuItem,
+      addCatalogItem,
+      deleteCatalogItem,
       startSession,
       endSession,
       addFoodToSession,
       refreshBills,
       refreshCustomers,
       refreshMenuItems,
+      refreshCatalogItems,
     }),
     [
       bills,
       activeSessions,
       customers,
       menuItems,
+      catalogItems,
+      gamingStations,
+      techServices,
       authUser,
       isAuthenticated,
       isAdmin,
@@ -336,12 +435,15 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       deleteCustomer,
       addMenuItem,
       deleteMenuItem,
+      addCatalogItem,
+      deleteCatalogItem,
       startSession,
       endSession,
       addFoodToSession,
       refreshBills,
       refreshCustomers,
       refreshMenuItems,
+      refreshCatalogItems,
     ]
   );
 

@@ -1,19 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useApp } from "@/components/providers/app-providers";
 import { CustomerSelectDropdown } from "@/components/staff/customer-search";
-import type { GameType } from "@/lib/types";
-import { GAME_LABELS } from "@/lib/pricing";
+import { formatCatalogPrice, EXTRAS_SECTION_LABEL } from "@/lib/catalog";
 
 const inputClass = "g-input";
-const GAMES: GameType[] = ["ps2", "ps3", "ps4", "ps5", "system"];
 
 export default function CreateBillPage() {
-  const { customers, activeSessions, startSession, addCustomer } = useApp();
+  const { customers, activeSessions, startSession, addCustomer, gamingStations, techServices } =
+    useApp();
   const [customerId, setCustomerId] = useState("");
-  const [gameType, setGameType] = useState<GameType>("ps5");
+  const [stationId, setStationId] = useState("");
+  const [extraSpecs, setExtraSpecs] = useState("");
+  const [techItemIds, setTechItemIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -23,11 +24,37 @@ export default function CreateBillPage() {
     [activeSessions]
   );
 
+  const selectedStation = useMemo(
+    () => gamingStations.find((s) => s.id === stationId),
+    [gamingStations, stationId]
+  );
+
+  const techPreviewTotal = useMemo(() => {
+    return techServices
+      .filter((item) => techItemIds.includes(item.id))
+      .reduce((sum, item) => sum + item.price, 0);
+  }, [techServices, techItemIds]);
+
+  useEffect(() => {
+    if (stationId && !gamingStations.some((s) => s.id === stationId)) {
+      setStationId("");
+    }
+    if (!stationId && gamingStations.length === 1) {
+      setStationId(gamingStations[0].id);
+    }
+  }, [gamingStations, stationId]);
+
   const handleCreateCustomer = async (input: Parameters<typeof addCustomer>[0]) => {
     const customer = await addCustomer(input);
     setCustomerId(customer.id);
     return customer;
   };
+
+  function toggleTechItem(id: string) {
+    setTechItemIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+    );
+  }
 
   async function handleStart(e: React.FormEvent) {
     e.preventDefault();
@@ -37,11 +64,22 @@ export default function CreateBillPage() {
       setError("Select a customer profile to start.");
       return;
     }
+    if (!stationId) {
+      setError("Select a gaming station.");
+      return;
+    }
     setStarting(true);
     try {
-      await startSession({ customerId, gameType });
+      await startSession({
+        customerId,
+        stationId,
+        extraSpecs,
+        techItemIds,
+      });
       setCustomerId("");
-      setGameType("ps5");
+      setStationId(gamingStations.length === 1 ? gamingStations[0].id : "");
+      setExtraSpecs("");
+      setTechItemIds([]);
       setSuccess("Session started. Manage it from Active sessions.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to start session.");
@@ -57,7 +95,8 @@ export default function CreateBillPage() {
           Start session
         </h1>
         <p className="g-muted" style={{ marginTop: "0.35rem", fontSize: "0.92rem" }}>
-          Search for a customer or create one inline, then pick a station. Timer and food orders are handled on{" "}
+          Pick a customer, gaming station, optional extra items, and any session notes. Timer and food
+          orders are handled on{" "}
           <Link href="/active-sessions" style={{ color: "#34d399", textDecoration: "none" }}>
             Active sessions
           </Link>
@@ -83,34 +122,113 @@ export default function CreateBillPage() {
           />
         </Field>
 
-          <Field label="Game station">
+        <Field label="Gaming station">
+          {!gamingStations.length ? (
+            <div className="g-card" style={{ padding: "0.85rem", background: "#111115" }}>
+              <p className="g-muted" style={{ margin: 0, fontSize: "0.88rem" }}>
+                No gaming stations in catalog.{" "}
+                <Link href="/stations" style={{ color: "#34d399", textDecoration: "none" }}>
+                  Add stations
+                </Link>{" "}
+                first.
+              </p>
+            </div>
+          ) : (
             <select
+              required
               className={inputClass}
-              value={gameType}
-              onChange={(e) => setGameType(e.target.value as GameType)}
+              value={stationId}
+              onChange={(e) => setStationId(e.target.value)}
             >
-              {GAMES.map((g) => (
-                <option key={g} value={g}>
-                  {GAME_LABELS[g]}
+              <option value="">Select gaming station…</option>
+              {gamingStations.map((station) => (
+                <option key={station.id} value={station.id}>
+                  {station.name}
+                  {station.specs ? ` — ${station.specs}` : ""}
                 </option>
               ))}
             </select>
-          </Field>
+          )}
+          {selectedStation?.specs ? (
+            <p className="g-muted" style={{ margin: "0.45rem 0 0", fontSize: "0.82rem" }}>
+              Default specs: {selectedStation.specs}
+            </p>
+          ) : null}
+        </Field>
 
-          <div>
-            <button
-              type="submit"
-              className="g-btn-primary"
-              style={{ cursor: "pointer" }}
-              disabled={starting || !customerId}
-            >
-              {starting ? "Starting…" : "Start session"}
-            </button>
-          </div>
-        </form>
+        <Field label="Extra specs / notes (optional)">
+          <textarea
+            className={`${inputClass} g-textarea`}
+            rows={3}
+            value={extraSpecs}
+            onChange={(e) => setExtraSpecs(e.target.value)}
+            placeholder="Session-specific notes, accessories, special setup…"
+          />
+        </Field>
+
+        <Field label={`${EXTRAS_SECTION_LABEL} (optional)`}>
+          {!techServices.length ? (
+            <p className="g-muted" style={{ margin: 0, fontSize: "0.88rem" }}>
+              No extra items yet.{" "}
+              <Link href="/stations" style={{ color: "#34d399", textDecoration: "none" }}>
+                Add extras
+              </Link>{" "}
+              in the catalog (monitors, controllers, etc.).
+            </p>
+          ) : (
+            <div className="g-tech-service-picker">
+              {techServices.map((item) => {
+                const checked = techItemIds.includes(item.id);
+                return (
+                  <label key={item.id} className={`g-tech-service-option${checked ? " is-selected" : ""}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleTechItem(item.id)}
+                    />
+                    <span className="g-tech-service-option-main">
+                      <span className="g-tech-service-option-name">{item.name}</span>
+                      {item.specs ? (
+                        <span className="g-tech-service-option-specs">{item.specs}</span>
+                      ) : null}
+                    </span>
+                    <span className="g-tech-service-option-price">{formatCatalogPrice(item.price)}</span>
+                  </label>
+                );
+              })}
+              {techPreviewTotal > 0 ? (
+                <p className="g-muted" style={{ margin: "0.35rem 0 0", fontSize: "0.82rem" }}>
+                  Extras total: {formatCatalogPrice(techPreviewTotal)}
+                </p>
+              ) : null}
+            </div>
+          )}
+        </Field>
+
+        <div>
+          <button
+            type="submit"
+            className="g-btn-primary"
+            style={{ cursor: "pointer" }}
+            disabled={starting || !customerId || !stationId}
+          >
+            {starting ? "Starting…" : "Start session"}
+          </button>
+        </div>
+      </form>
 
       {success ? (
-        <p style={{ margin: 0, borderRadius: 12, border: "1px solid #14532d", background: "#052e16", color: "#bbf7d0", padding: "0.7rem 0.85rem", fontSize: "0.9rem" }}>
+        <p
+          style={{
+            margin: 0,
+            borderRadius: 12,
+            border: "1px solid #14532d",
+            background: "#052e16",
+            color: "#bbf7d0",
+            padding: "0.7rem 0.85rem",
+            fontSize: "0.9rem",
+          }}
+        >
           {success}{" "}
           <Link href="/active-sessions" style={{ color: "#86efac", fontWeight: 600 }}>
             Go to Active sessions →
@@ -118,7 +236,17 @@ export default function CreateBillPage() {
         </p>
       ) : null}
       {error ? (
-        <p style={{ margin: 0, borderRadius: 12, border: "1px solid #7f1d1d", background: "#450a0a", color: "#fecaca", padding: "0.7rem 0.85rem", fontSize: "0.9rem" }}>
+        <p
+          style={{
+            margin: 0,
+            borderRadius: 12,
+            border: "1px solid #7f1d1d",
+            background: "#450a0a",
+            color: "#fecaca",
+            padding: "0.7rem 0.85rem",
+            fontSize: "0.9rem",
+          }}
+        >
           {error}
         </p>
       ) : null}

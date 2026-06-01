@@ -11,6 +11,7 @@ const nav = [
   { href: "/create-bill", label: "Start session" },
   { href: "/customers", label: "Customers" },
   { href: "/food", label: "Food menu" },
+  { href: "/stations", label: "Stations & extras" },
 ];
 
 export function StaffShell({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,8 @@ export function StaffShell({ children }: { children: React.ReactNode }) {
             {nav.map(({ href, label, showLiveCount }) => {
               const active =
                 pathname === href ||
-                (href === "/customers" && pathname.startsWith("/customers"));
+                (href === "/customers" && pathname.startsWith("/customers")) ||
+                (href === "/stations" && pathname.startsWith("/stations"));
               return (
                 <Link
                   key={href}

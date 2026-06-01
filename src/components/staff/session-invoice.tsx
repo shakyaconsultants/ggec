@@ -11,10 +11,12 @@ import {
 } from "@/lib/invoice";
 import { lineTotal } from "@/lib/food";
 import { printInvoice } from "@/lib/invoice-print";
-import { formatDuration, GAME_LABELS, GAMING_PRICING_SUMMARY, GAMING_RATE_LABEL } from "@/lib/pricing";
+import { getStationLabel, techLineTotal } from "@/lib/catalog";
+import { formatDuration, GAMING_PRICING_SUMMARY, GAMING_RATE_LABEL } from "@/lib/pricing";
 
 export function SessionInvoice({ bill, showActions = true, onClose, compact }: InvoiceProps) {
   const foodItems = bill.foodItems ?? [];
+  const techItems = bill.techItems ?? [];
   const canRender = bill.status === "completed" && !!bill.endedAt;
 
   function handlePrint() {
@@ -37,6 +39,8 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
   }
 
   const hasFood = foodItems.length > 0;
+  const hasTech = techItems.length > 0;
+  const stationLabel = getStationLabel(bill);
 
   return (
     <article className={`g-invoice${compact ? " g-invoice-compact" : ""}`} id={`invoice-${bill.id}`}>
@@ -63,7 +67,10 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
         </div>
         <div>
           <p className="g-invoice-section-title">Session</p>
-          <p className="g-invoice-detail">{GAME_LABELS[bill.gameType]}</p>
+          <p className="g-invoice-detail">{stationLabel}</p>
+          {bill.extraSpecs ? (
+            <p className="g-invoice-detail">Notes: {bill.extraSpecs}</p>
+          ) : null}
           <p className="g-invoice-detail">Start: {formatDateTime(bill.startedAt)}</p>
           <p className="g-invoice-detail">End: {formatDateTime(bill.endedAt!)}</p>
         </div>
@@ -80,11 +87,19 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
         </thead>
         <tbody>
           <tr>
-            <td>Gaming session — {GAME_LABELS[bill.gameType]}</td>
+            <td>Gaming session — {stationLabel}</td>
             <td>{formatDuration(bill.durationHours)}</td>
             <td>{GAMING_RATE_LABEL}</td>
             <td>{formatMoney(bill.gamingAmount)}</td>
           </tr>
+          {techItems.map((line) => (
+            <tr key={line.itemId}>
+              <td>{line.name}</td>
+              <td>{line.quantity}</td>
+              <td>{formatMoney(line.unitPrice)}</td>
+              <td>{formatMoney(techLineTotal(line))}</td>
+            </tr>
+          ))}
           {foodItems.map((line) => (
             <tr key={line.foodId}>
               <td>{line.name}</td>
@@ -95,16 +110,24 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
           ))}
         </tbody>
         <tfoot>
-          {hasFood ? (
+          {(hasFood || hasTech) ? (
             <>
               <tr className="g-invoice-subtotal">
                 <td colSpan={3}>Gaming subtotal</td>
                 <td>{formatMoney(bill.gamingAmount)}</td>
               </tr>
-              <tr className="g-invoice-subtotal">
-                <td colSpan={3}>Food subtotal</td>
-                <td>{formatMoney(bill.foodTotal)}</td>
-              </tr>
+              {hasTech ? (
+                <tr className="g-invoice-subtotal">
+                  <td colSpan={3}>Extras subtotal</td>
+                  <td>{formatMoney(bill.techTotal)}</td>
+                </tr>
+              ) : null}
+              {hasFood ? (
+                <tr className="g-invoice-subtotal">
+                  <td colSpan={3}>Food subtotal</td>
+                  <td>{formatMoney(bill.foodTotal)}</td>
+                </tr>
+              ) : null}
             </>
           ) : null}
           <tr>
@@ -116,7 +139,7 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
 
       <p className="g-invoice-footer">
         Thank you for visiting {BRAND_FULL_NAME}. {GAMING_PRICING_SUMMARY}
-        {hasFood ? " · Food billed separately" : ""} · Session ID: {bill.id.slice(0, 8)}
+        {hasFood || hasTech ? " · Add-ons billed separately" : ""} · Session ID: {bill.id.slice(0, 8)}
       </p>
 
       {showActions ? (
@@ -187,7 +210,7 @@ export function InvoiceListItem({
     <tr className="g-invoice-row">
       <td>{invoiceNumber(bill.id)}</td>
       <td>{formatDateTime(bill.endedAt)}</td>
-      <td>{GAME_LABELS[bill.gameType]}</td>
+      <td>{getStationLabel(bill)}</td>
       <td>{formatDuration(bill.durationHours)}</td>
       <td>{formatMoney(bill.amount)}</td>
       <td>

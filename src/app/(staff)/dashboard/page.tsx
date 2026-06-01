@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useApp } from "@/components/providers/app-providers";
 import {
   completedBills,
-  mostPlayedGame,
+  mostPlayedStation,
   peakDaysOfWeek,
   peakHours,
   topCustomerByRevenue,
   topLocalityByRevenue,
   totalRevenue,
 } from "@/lib/analytics";
-import { GAME_LABELS } from "@/lib/pricing";
 
 function formatHour(h: number): string {
   const am = h < 12;
@@ -26,7 +25,7 @@ export default function DashboardPage() {
   const completed = useMemo(() => completedBills(bills), [bills]);
 
   const stats = useMemo(() => {
-    const played = mostPlayedGame(bills);
+    const played = mostPlayedStation(bills);
     const hours = peakHours(bills);
     const days = peakDaysOfWeek(bills);
     const customer = topCustomerByRevenue(bills);
@@ -69,7 +68,7 @@ export default function DashboardPage() {
             />
             <StatCard
               title="Most played"
-              value={stats.played ? GAME_LABELS[stats.played.game] : "—"}
+              value={stats.played ? stats.played.station : "—"}
               hint={stats.played ? `${stats.played.count} sessions` : ""}
             />
             <StatCard

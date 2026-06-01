@@ -1,4 +1,5 @@
-import type { Bill, Customer, GameType } from "./types";
+import type { Bill, Customer } from "./types";
+import { getBillStationKey, getStationLabel } from "./catalog";
 import { completedBills } from "./analytics";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
@@ -17,9 +18,9 @@ export type CustomerProfileStats = {
   totalSpent: number;
   averageSessionHours: number;
   averageSpend: number;
-  favoriteStation: { game: GameType; count: number } | null;
+  favoriteStation: { station: string; count: number } | null;
   lastSessionAt: string | null;
-  sessionsByStation: { game: GameType; count: number; hours: number; spent: number }[];
+  sessionsByStation: { station: string; count: number; hours: number; spent: number }[];
   recentActivity: { dayIndex: number; label: string; count: number }[];
 };
 
@@ -32,22 +33,26 @@ export function computeCustomerProfileStats(
   const totalHours = done.reduce((s, b) => s + b.durationHours, 0);
   const totalSpent = done.reduce((s, b) => s + b.amount, 0);
 
-  const stationMap = new Map<GameType, { count: number; hours: number; spent: number }>();
+  const stationMap = new Map<string, { count: number; hours: number; spent: number }>();
   for (const b of done) {
-    const cur = stationMap.get(b.gameType) ?? { count: 0, hours: 0, spent: 0 };
+    const key = getBillStationKey(b);
+    const cur = stationMap.get(key) ?? { count: 0, hours: 0, spent: 0 };
     cur.count += 1;
     cur.hours += b.durationHours;
     cur.spent += b.amount;
-    stationMap.set(b.gameType, cur);
+    stationMap.set(key, cur);
   }
 
   const sessionsByStation = [...stationMap.entries()]
-    .map(([game, v]) => ({ game, ...v }))
+    .map(([key, v]) => {
+      const sample = done.find((bill) => getBillStationKey(bill) === key);
+      return { station: sample ? getStationLabel(sample) : key, ...v };
+    })
     .sort((a, b) => b.count - a.count || b.hours - a.hours);
 
   let favoriteStation: CustomerProfileStats["favoriteStation"] = null;
   if (sessionsByStation.length) {
-    favoriteStation = { game: sessionsByStation[0].game, count: sessionsByStation[0].count };
+    favoriteStation = { station: sessionsByStation[0].station, count: sessionsByStation[0].count };
   }
 
   const byDay = new Array(7).fill(0) as number[];

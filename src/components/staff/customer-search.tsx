@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { PasswordInput } from "@/components/ui/password-input";
 import { DEFAULT_USER_PASSWORD } from "@/lib/auth";
 import type { Customer } from "@/lib/types";
@@ -14,6 +15,14 @@ export type CreateCustomerInput = {
   phone: string;
   locality: string;
   password?: string;
+};
+
+type PanelMode = "list" | "create";
+
+type PanelPosition = {
+  top: number;
+  left: number;
+  width: number;
 };
 
 function looksLikeEmail(value: string): boolean {
@@ -196,12 +205,20 @@ export function CustomerSelectDropdown({
   placeholder?: string;
   emptyMessage?: string;
 }) {
+  const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const createFormKeyRef = useRef(0);
+  const userPrefersListRef = useRef(false);
+
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [query, setQuery] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [panelMode, setPanelMode] = useState<PanelMode>("list");
   const [createSeed, setCreateSeed] = useState<Partial<CreateCustomerInput>>({});
   const [recentCustomer, setRecentCustomer] = useState<Customer | null>(null);
+  const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null);
 
   const canCreate = Boolean(onCreateCustomer);
   const excludedIds = useMemo(() => new Set(excludeCustomerIds), [excludeCustomerIds]);
@@ -223,77 +240,130 @@ export function CustomerSelectDropdown({
   const noMatches = query.trim().length > 0 && filtered.length === 0;
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (selectedId && recentCustomer?.id === selectedId) {
       const fromList = customers.find((c) => c.id === selectedId);
       if (fromList) setRecentCustomer(null);
     }
   }, [customers, recentCustomer, selectedId]);
 
+  const updatePanelPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    setPanelPosition({
+      top: rect.bottom + 6,
+      left: rect.left,
+      width: Math.max(rect.width, 320),
+    });
+  }, []);
+
   useEffect(() => {
-    if (!open || !canCreate) return;
+    if (!open) return;
+    updatePanelPosition();
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [open, updatePanelPosition]);
+
+  const resetPanel = useCallback(() => {
+    setQuery("");
+    setPanelMode("list");
+    setCreateSeed({});
+  }, []);
+
+  const closePanel = useCallback(() => {
+    setOpen(false);
+    resetPanel();
+  }, [resetPanel]);
+
+  const openCreateForm = useCallback(
+    (seed?: Partial<CreateCustomerInput>) => {
+      createFormKeyRef.current += 1;
+      userPrefersListRef.current = false;
+      setCreateSeed(seed ?? guessCreateFieldsFromQuery(query));
+      setPanelMode("create");
+    },
+    [query]
+  );
+
+  const goBackToList = useCallback(() => {
+    userPrefersListRef.current = true;
+    setPanelMode("list");
+    setCreateSeed({});
+  }, []);
+
+  useEffect(() => {
+    if (!open || !canCreate || panelMode === "create") return;
+    if (userPrefersListRef.current) return;
+
     if (!selectableCustomers.length) {
-      setShowCreateForm(true);
-      setCreateSeed(noMatches ? guessCreateFieldsFromQuery(query) : {});
+      openCreateForm(noMatches ? guessCreateFieldsFromQuery(query) : {});
       return;
     }
+
     if (noMatches) {
-      setShowCreateForm(true);
-      setCreateSeed(guessCreateFieldsFromQuery(query));
+      openCreateForm(guessCreateFieldsFromQuery(query));
     }
-  }, [open, canCreate, selectableCustomers.length, noMatches, query]);
+  }, [open, canCreate, panelMode, selectableCustomers.length, noMatches, query, openCreateForm]);
 
   useEffect(() => {
     if (!open) return;
 
-    function onPointerDown(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
-        setShowCreateForm(false);
-        setCreateSeed({});
-      }
+    function isInsidePanel(target: Node) {
+      return (
+        rootRef.current?.contains(target) === true || panelRef.current?.contains(target) === true
+      );
+    }
+
+    function onPointerDown(e: PointerEvent) {
+      if (isInsidePanel(e.target as Node)) return;
+      if (panelMode === "create") return;
+      closePanel();
     }
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setOpen(false);
-        setQuery("");
-        setShowCreateForm(false);
+      if (e.key !== "Escape") return;
+      if (panelMode === "create") {
+        setPanelMode("list");
         setCreateSeed({});
+        return;
       }
+      closePanel();
     }
 
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
-
-  function resetPanel() {
-    setQuery("");
-    setShowCreateForm(false);
-    setCreateSeed({});
-  }
+  }, [open, panelMode, closePanel]);
 
   function handleSelect(id: string) {
     onSelect(id);
-    setOpen(false);
-    resetPanel();
+    closePanel();
   }
 
   function handleToggle() {
     if (disabled) return;
-    setOpen((prev) => {
-      if (prev) resetPanel();
-      return !prev;
-    });
-  }
-
-  function openCreateForm(seed?: Partial<CreateCustomerInput>) {
-    setShowCreateForm(true);
-    setCreateSeed(seed ?? guessCreateFieldsFromQuery(query));
+    if (open) {
+      closePanel();
+      return;
+    }
+    userPrefersListRef.current = false;
+    if (canCreate && selectableCustomers.length === 0) {
+      openCreateForm();
+    } else {
+      resetPanel();
+    }
+    setOpen(true);
   }
 
   async function handleCreateCustomer(input: CreateCustomerInput): Promise<Customer> {
@@ -302,41 +372,46 @@ export function CustomerSelectDropdown({
     }
     const customer = await onCreateCustomer(input);
     setRecentCustomer(customer);
-    setShowCreateForm(false);
-    setCreateSeed({});
-    setQuery("");
     onSelect(customer.id);
-    setOpen(false);
+    closePanel();
     return customer;
   }
 
-  return (
-    <div
-      ref={rootRef}
-      className={`g-customer-dropdown${open ? " is-open" : ""}${disabled ? " is-disabled" : ""}`}
-    >
-      <button
-        type="button"
-        className="g-customer-dropdown-trigger g-input"
-        onClick={handleToggle}
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={open}
+  const panel =
+    open && panelPosition && mounted ? (
+      <div
+        ref={panelRef}
+        id={listboxId}
+        className="g-customer-dropdown-panel g-customer-dropdown-panel-portal"
+        style={{
+          top: panelPosition.top,
+          left: panelPosition.left,
+          width: panelPosition.width,
+        }}
+        role="dialog"
+        aria-label={panelMode === "create" ? "Create customer" : "Select customer"}
       >
-        <span className={selected ? "g-customer-dropdown-value" : "g-customer-dropdown-placeholder"}>
-          {selected ? customerLabel(selected) : placeholder}
-        </span>
-        <span className="g-customer-dropdown-chevron" aria-hidden>
-          ▾
-        </span>
-      </button>
-
-      {open ? (
-        <div className="g-customer-dropdown-panel">
+        {panelMode === "create" ? (
+          <div className="g-customer-dropdown-create-header">
+            <button
+              type="button"
+              className="g-customer-dropdown-back"
+              onClick={goBackToList}
+            >
+              ← Back to list
+            </button>
+            <p className="g-muted g-customer-dropdown-create-hint">
+              Click outside is disabled while creating. Use Back or Cancel to return.
+            </p>
+          </div>
+        ) : (
           <div className="g-customer-dropdown-search">
             <CustomerSearchInput
               value={query}
-              onChange={setQuery}
+              onChange={(value) => {
+                userPrefersListRef.current = false;
+                setQuery(value);
+              }}
               placeholder="Search customers…"
               autoFocus
               onKeyDown={(e) => {
@@ -347,20 +422,22 @@ export function CustomerSelectDropdown({
               }}
             />
           </div>
+        )}
 
-          {!showCreateForm ? (
+        {panelMode === "list" ? (
+          <>
             <div className="g-customer-dropdown-list" role="listbox" aria-label="Customer profiles">
               {!selectableCustomers.length ? (
                 <p className="g-muted g-customer-picker-empty">
                   {canCreate
                     ? customers.length
-                      ? "All customers have active sessions. Create a new one below."
-                      : "No customers yet. Create one below."
+                      ? "All customers have active sessions."
+                      : "No customers yet."
                     : emptyMessage}
                 </p>
               ) : !filtered.length ? (
                 <p className="g-muted g-customer-picker-empty">
-                  {canCreate ? "No match found. Create a new customer below." : emptyMessage}
+                  {canCreate ? "No match found." : emptyMessage}
                 </p>
               ) : (
                 filtered.map((c) => {
@@ -384,35 +461,62 @@ export function CustomerSelectDropdown({
                 })
               )}
             </div>
-          ) : null}
 
-          {canCreate && showCreateForm ? (
-            <CustomerCreateForm
-              key={`${createSeed.name ?? ""}-${createSeed.email ?? ""}-${createSeed.phone ?? ""}`}
-              initial={createSeed}
-              onCancel={() => {
-                setShowCreateForm(false);
-                setCreateSeed({});
-              }}
-              onCreate={handleCreateCustomer}
-            />
-          ) : null}
+            {canCreate ? (
+              <div className="g-customer-dropdown-create-toggle">
+                <button type="button" className="g-btn-ghost" onClick={() => openCreateForm()}>
+                  + Create new customer
+                </button>
+              </div>
+            ) : null}
 
-          {canCreate && !showCreateForm ? (
-            <div className="g-customer-dropdown-create-toggle">
-              <button type="button" className="g-btn-ghost" onClick={() => openCreateForm()}>
-                + Create new customer
-              </button>
-            </div>
-          ) : null}
+            {selectableCustomers.length > 0 ? (
+              <p className="g-customer-dropdown-footer g-muted">
+                {filtered.length} of {selectableCustomers.length} shown
+              </p>
+            ) : null}
+          </>
+        ) : canCreate ? (
+          <CustomerCreateForm
+            key={createFormKeyRef.current}
+            initial={createSeed}
+            onCancel={() => {
+              if (selectableCustomers.length === 0) {
+                closePanel();
+                return;
+              }
+              goBackToList();
+            }}
+            onCreate={handleCreateCustomer}
+          />
+        ) : null}
+      </div>
+    ) : null;
 
-          {!showCreateForm && selectableCustomers.length > 0 ? (
-            <p className="g-customer-dropdown-footer g-muted">
-              {filtered.length} of {selectableCustomers.length} shown
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+  return (
+    <div
+      ref={rootRef}
+      className={`g-customer-dropdown${open ? " is-open" : ""}${disabled ? " is-disabled" : ""}`}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        className="g-customer-dropdown-trigger g-input"
+        onClick={handleToggle}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+      >
+        <span className={selected ? "g-customer-dropdown-value" : "g-customer-dropdown-placeholder"}>
+          {selected ? customerLabel(selected) : placeholder}
+        </span>
+        <span className="g-customer-dropdown-chevron" aria-hidden>
+          ▾
+        </span>
+      </button>
+
+      {mounted && panel ? createPortal(panel, document.body) : null}
     </div>
   );
 }

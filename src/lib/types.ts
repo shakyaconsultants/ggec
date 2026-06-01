@@ -4,6 +4,17 @@ export type BillStatus = "active" | "completed";
 
 export type UserRole = "admin" | "user";
 
+export type CatalogItemKind = "gaming_station" | "tech_service";
+
+export type CatalogItem = {
+  id: string;
+  name: string;
+  price: number;
+  kind: CatalogItemKind;
+  specs: string;
+  createdAt: string;
+};
+
 export type FoodItem = {
   id: string;
   name: string;
@@ -13,6 +24,13 @@ export type FoodItem = {
 
 export type SessionFoodLine = {
   foodId: string;
+  name: string;
+  unitPrice: number;
+  quantity: number;
+};
+
+export type SessionTechLine = {
+  itemId: string;
   name: string;
   unitPrice: number;
   quantity: number;
@@ -44,14 +62,20 @@ export type Bill = {
   customerName: string;
   phone: string;
   locality: string;
-  gameType: GameType;
+  /** @deprecated Legacy station slug; use stationId/stationName for new sessions. */
+  gameType?: GameType;
+  stationId: string;
+  stationName: string;
+  extraSpecs: string;
   status: BillStatus;
   startedAt: string;
   endedAt?: string;
   durationHours: number;
   foodItems: SessionFoodLine[];
+  techItems: SessionTechLine[];
   gamingAmount: number;
   foodTotal: number;
+  techTotal: number;
   amount: number;
   createdAt: string;
 };

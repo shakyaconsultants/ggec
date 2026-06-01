@@ -9,7 +9,7 @@ import {
   completedBillsForCustomer,
 } from "@/lib/customer-analytics";
 import { formatDate, formatMoney } from "@/lib/invoice";
-import { formatDuration, GAME_LABELS } from "@/lib/pricing";
+import { formatDuration } from "@/lib/pricing";
 import type { Bill, Customer } from "@/lib/types";
 
 type CustomerProfileViewProps = {
@@ -100,7 +100,7 @@ export function CustomerProfileView({
               Main station
             </span>
             <span style={{ display: "block", marginTop: "0.2rem", fontWeight: 700, color: "#34d399" }}>
-              {GAME_LABELS[stats.favoriteStation.game]}
+              {stats.favoriteStation.station}
             </span>
             <span className="g-muted" style={{ fontSize: "0.78rem" }}>
               {stats.favoriteStation.count} sessions
@@ -133,8 +133,8 @@ export function CustomerProfileView({
             <h2 style={{ margin: 0, fontSize: "0.95rem", color: "#d4d4d8" }}>Sessions by station</h2>
             <ul style={{ margin: "0.85rem 0 0", padding: 0, listStyle: "none", display: "grid", gap: "0.55rem" }}>
               {stats.sessionsByStation.map((row) => (
-                <li key={row.game} style={{ display: "flex", alignItems: "center", gap: "0.55rem", fontSize: "0.85rem" }}>
-                  <span style={{ width: 110, color: "#e4e4e7" }}>{GAME_LABELS[row.game]}</span>
+                <li key={row.station} style={{ display: "flex", alignItems: "center", gap: "0.55rem", fontSize: "0.85rem" }}>
+                  <span style={{ width: 110, color: "#e4e4e7" }}>{row.station}</span>
                   <div style={{ height: 8, flex: 1, overflow: "hidden", borderRadius: 999, background: "#27272a" }}>
                     <div
                       style={{

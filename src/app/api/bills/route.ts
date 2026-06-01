@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import type { GameType } from "@/lib/types";
 import { endSession, listBills, startSession } from "@/lib/server-bills";
 
 type StartSessionBody = {
   customerId?: string;
-  gameType?: GameType;
+  stationId?: string;
+  extraSpecs?: string;
+  techItemIds?: string[];
 };
 
 export async function GET() {
@@ -20,13 +21,18 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as StartSessionBody;
-    if (!body.customerId || !body.gameType) {
-      return NextResponse.json({ message: "Customer and game station are required." }, { status: 400 });
+    if (!body.customerId || !body.stationId) {
+      return NextResponse.json(
+        { message: "Customer and gaming station are required." },
+        { status: 400 }
+      );
     }
 
     const bill = await startSession({
       customerId: body.customerId,
-      gameType: body.gameType,
+      stationId: body.stationId,
+      extraSpecs: body.extraSpecs,
+      techItemIds: body.techItemIds,
     });
 
     return NextResponse.json({ bill }, { status: 201 });

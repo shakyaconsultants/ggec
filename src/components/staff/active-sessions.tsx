@@ -8,7 +8,7 @@ import { FoodMultiSelectDropdown } from "@/components/staff/food-multi-select";
 import { SessionTimer } from "@/components/staff/session-timer";
 import { sessionMatchesCustomerName } from "@/lib/customer-search";
 import { formatFoodPrice, lineTotal } from "@/lib/food";
-import { GAME_LABELS } from "@/lib/pricing";
+import { getStationLabel } from "@/lib/catalog";
 
 type ActiveSessionsPanelProps = {
   sessions: Bill[];
@@ -144,11 +144,12 @@ function ActiveSessionCard({
         <div className="g-live-compact-main">
           <div className="g-live-compact-head">
             <p className="g-live-card-name">{session.customerName}</p>
-            <span className="g-live-station-tag">{GAME_LABELS[session.gameType]}</span>
+            <span className="g-live-station-tag">{getStationLabel(session)}</span>
           </div>
           <p className="g-muted g-live-card-sub">
             Food {formatFoodPrice(session.foodTotal)}
-            {session.foodItems.length ? ` · ${session.foodItems.length} item${session.foodItems.length === 1 ? "" : "s"}` : ""}
+            {session.techTotal > 0 ? ` · Extras ${formatFoodPrice(session.techTotal)}` : ""}
+            {session.foodItems.length ? ` · ${session.foodItems.length} food item${session.foodItems.length === 1 ? "" : "s"}` : ""}
           </p>
         </div>
         <div className="g-live-compact-timer font-display">

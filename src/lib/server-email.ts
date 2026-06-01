@@ -3,7 +3,8 @@ import { BRAND_FULL_NAME, BRAND_NAME } from "@/lib/brand";
 import { env } from "@/lib/env";
 import { lineTotal } from "@/lib/food";
 import { formatDateTime, formatMoney, invoiceNumber } from "@/lib/invoice";
-import { formatDuration, GAME_LABELS, GAMING_PRICING_SUMMARY } from "@/lib/pricing";
+import { getStationLabel, techLineTotal } from "@/lib/catalog";
+import { formatDuration, GAMING_PRICING_SUMMARY } from "@/lib/pricing";
 import type { Bill } from "@/lib/types";
 type WelcomeEmailInput = {
   name: string;
@@ -180,14 +181,24 @@ function buildSessionInvoiceEmailHtml(bill: Bill, email: string): string {
   const name = escapeHtml(bill.customerName);
   const customerEmail = escapeHtml(email);
   const foodItems = bill.foodItems ?? [];
+  const techItems = bill.techItems ?? [];
   const hasFood = foodItems.length > 0;
+  const hasTech = techItems.length > 0;
+  const stationLabel = getStationLabel(bill);
 
   const lineRows = [
     `<tr>
-      <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#e4e4e7;">Gaming — ${escapeHtml(GAME_LABELS[bill.gameType])}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#e4e4e7;">Gaming — ${escapeHtml(stationLabel)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#a1a1aa;">${escapeHtml(formatDuration(bill.durationHours))}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#a1a1aa;text-align:right;">${escapeHtml(formatMoney(bill.gamingAmount))}</td>
     </tr>`,
+    ...techItems.map(
+      (line) => `<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#e4e4e7;">${escapeHtml(line.name)} ×${line.quantity}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#a1a1aa;">${escapeHtml(formatMoney(line.unitPrice))} each</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#a1a1aa;text-align:right;">${escapeHtml(formatMoney(techLineTotal(line)))}</td>
+    </tr>`
+    ),
     ...foodItems.map(
       (line) => `<tr>
       <td style="padding:10px 12px;border-bottom:1px solid #27272a;color:#e4e4e7;">${escapeHtml(line.name)} ×${line.quantity}</td>
@@ -247,10 +258,12 @@ function buildSessionInvoiceEmailHtml(bill: Bill, email: string): string {
             <td style="padding:0 28px 24px;">
               <h2 style="margin:0 0 12px;font-size:16px;color:#fafafa;">Session details</h2>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #27272a;border-radius:12px;overflow:hidden;">
-                <tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;width:120px;">Station</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(GAME_LABELS[bill.gameType])}</td></tr>
+                <tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;width:120px;">Station</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(stationLabel)}</td></tr>
+                ${bill.extraSpecs ? `<tr><td style="padding:12px 14px;background:#18181b;color:#a1a1aa;">Notes</td><td style="padding:12px 14px;background:#18181b;color:#fafafa;font-weight:600;">${escapeHtml(bill.extraSpecs)}</td></tr>` : ""}
                 <tr><td style="padding:12px 14px;background:#18181b;color:#a1a1aa;">Duration</td><td style="padding:12px 14px;background:#18181b;color:#fafafa;font-weight:600;">${escapeHtml(formatDuration(bill.durationHours))}</td></tr>
                 <tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;">Gaming rate</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(GAMING_PRICING_SUMMARY)}</td></tr>
                 <tr><td style="padding:12px 14px;background:#18181b;color:#a1a1aa;">Gaming subtotal</td><td style="padding:12px 14px;background:#18181b;color:#fafafa;font-weight:600;">${escapeHtml(formatMoney(bill.gamingAmount))}</td></tr>
+                ${hasTech ? `<tr><td style="padding:12px 14px;background:#18181b;color:#a1a1aa;">Extras</td><td style="padding:12px 14px;background:#18181b;color:#fafafa;font-weight:600;">${escapeHtml(formatMoney(bill.techTotal))}</td></tr>` : ""}
                 ${hasFood ? `<tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;">Food total</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(formatMoney(bill.foodTotal))}</td></tr>` : ""}
               </table>
             </td>
@@ -306,7 +319,7 @@ function buildSessionInvoiceEmailText(bill: Bill, email: string): string {
     "",
     `Invoice: ${number}`,
     `Date: ${formatDateTime(bill.endedAt ?? bill.createdAt)}`,
-    `Station: ${GAME_LABELS[bill.gameType]}`,
+    `Station: ${getStationLabel(bill)}`,
     `Duration: ${formatDuration(bill.durationHours)}`,
     `Gaming: ${formatMoney(bill.gamingAmount)}`,
   ];

@@ -135,6 +135,63 @@ a {
   border-color: #10b981;
 }
 
+.g-textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+  font-family: inherit;
+}
+
+.g-tech-service-picker {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.g-tech-service-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  background: #09090bcc;
+  cursor: pointer;
+}
+
+.g-tech-service-option.is-selected {
+  border-color: #34d399;
+  background: #052e1688;
+}
+
+.g-tech-service-option input {
+  margin-top: 0.15rem;
+  accent-color: #34d399;
+}
+
+.g-tech-service-option-main {
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.g-tech-service-option-name {
+  color: #fafafa;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.g-tech-service-option-specs {
+  color: #a1a1aa;
+  font-size: 0.78rem;
+}
+
+.g-tech-service-option-price {
+  color: #34d399;
+  font-weight: 700;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
 .g-password-field {
   display: flex;
   align-items: center;
@@ -296,16 +353,52 @@ a {
 }
 
 .g-customer-dropdown-panel {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 0.35rem);
-  left: 0;
-  right: 0;
   border: 1px solid #3f3f46;
   border-radius: 14px;
   background: #18181b;
   box-shadow: 0 16px 40px #00000080;
   overflow: hidden;
+}
+
+.g-customer-dropdown-panel-portal {
+  position: fixed;
+  z-index: 1200;
+}
+
+.g-customer-dropdown-create-header {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #27272a;
+  background: #111115;
+}
+
+.g-customer-dropdown-back {
+  justify-self: start;
+  border: none;
+  background: transparent;
+  color: #34d399;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.g-customer-dropdown-back:hover {
+  color: #86efac;
+}
+
+.g-customer-dropdown-create-hint {
+  margin: 0;
+  font-size: 0.74rem;
+}
+
+.g-customer-dropdown-panel:not(.g-customer-dropdown-panel-portal) {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
 }
 
 .g-customer-dropdown-search {
@@ -407,8 +500,9 @@ a {
   display: grid;
   gap: 0.55rem;
   padding: 0.75rem;
-  border-top: 1px solid #27272a;
   background: #111115;
+  max-height: min(70vh, 520px);
+  overflow: auto;
 }
 
 .g-customer-dropdown-create-title {
