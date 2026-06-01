@@ -98,9 +98,7 @@ function CustomerCreateForm({
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  async function handleCreate() {
     setError(null);
     if (!name.trim() || !email.trim() || !phone.trim()) {
       setError("Name, email, and phone are required.");
@@ -123,7 +121,7 @@ function CustomerCreateForm({
   }
 
   return (
-    <form className="g-customer-dropdown-create" onSubmit={handleSubmit}>
+    <div className="g-customer-dropdown-create">
       <p className="g-customer-dropdown-create-title">Create new customer</p>
       <div className="g-customer-dropdown-create-grid">
         <input
@@ -171,11 +169,11 @@ function CustomerCreateForm({
         <button type="button" className="g-btn-ghost" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="g-btn-primary" disabled={creating}>
+        <button type="button" className="g-btn-primary" disabled={creating} onClick={handleCreate}>
           {creating ? "Creating…" : "Create & select"}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -184,6 +182,7 @@ export function CustomerSelectDropdown({
   selectedId,
   onSelect,
   onCreateCustomer,
+  excludeCustomerIds = [],
   disabled = false,
   placeholder = "Select customer…",
   emptyMessage = "No customers match your search.",
@@ -192,6 +191,7 @@ export function CustomerSelectDropdown({
   selectedId: string;
   onSelect: (id: string) => void;
   onCreateCustomer?: (input: CreateCustomerInput) => Promise<Customer>;
+  excludeCustomerIds?: string[];
   disabled?: boolean;
   placeholder?: string;
   emptyMessage?: string;
@@ -201,29 +201,46 @@ export function CustomerSelectDropdown({
   const [query, setQuery] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createSeed, setCreateSeed] = useState<Partial<CreateCustomerInput>>({});
+  const [recentCustomer, setRecentCustomer] = useState<Customer | null>(null);
 
-  const selected = customers.find((c) => c.id === selectedId);
   const canCreate = Boolean(onCreateCustomer);
+  const excludedIds = useMemo(() => new Set(excludeCustomerIds), [excludeCustomerIds]);
+
+  const selectableCustomers = useMemo(
+    () => customers.filter((c) => !excludedIds.has(c.id)),
+    [customers, excludedIds]
+  );
+
+  const selected =
+    customers.find((c) => c.id === selectedId) ??
+    (recentCustomer?.id === selectedId ? recentCustomer : undefined);
 
   const filtered = useMemo(
-    () => filterCustomers(customers, query).sort((a, b) => a.name.localeCompare(b.name)),
-    [customers, query]
+    () => filterCustomers(selectableCustomers, query).sort((a, b) => a.name.localeCompare(b.name)),
+    [selectableCustomers, query]
   );
 
   const noMatches = query.trim().length > 0 && filtered.length === 0;
 
   useEffect(() => {
+    if (selectedId && recentCustomer?.id === selectedId) {
+      const fromList = customers.find((c) => c.id === selectedId);
+      if (fromList) setRecentCustomer(null);
+    }
+  }, [customers, recentCustomer, selectedId]);
+
+  useEffect(() => {
     if (!open || !canCreate) return;
-    if (!customers.length) {
+    if (!selectableCustomers.length) {
       setShowCreateForm(true);
-      setCreateSeed({});
+      setCreateSeed(noMatches ? guessCreateFieldsFromQuery(query) : {});
       return;
     }
     if (noMatches) {
       setShowCreateForm(true);
       setCreateSeed(guessCreateFieldsFromQuery(query));
     }
-  }, [open, canCreate, customers.length, noMatches, query]);
+  }, [open, canCreate, selectableCustomers.length, noMatches, query]);
 
   useEffect(() => {
     if (!open) return;
@@ -284,7 +301,12 @@ export function CustomerSelectDropdown({
       throw new Error("Customer creation is not available.");
     }
     const customer = await onCreateCustomer(input);
-    handleSelect(customer.id);
+    setRecentCustomer(customer);
+    setShowCreateForm(false);
+    setCreateSeed({});
+    setQuery("");
+    onSelect(customer.id);
+    setOpen(false);
     return customer;
   }
 
@@ -328,9 +350,13 @@ export function CustomerSelectDropdown({
 
           {!showCreateForm ? (
             <div className="g-customer-dropdown-list" role="listbox" aria-label="Customer profiles">
-              {!customers.length ? (
+              {!selectableCustomers.length ? (
                 <p className="g-muted g-customer-picker-empty">
-                  {canCreate ? "No customers yet. Create one below." : emptyMessage}
+                  {canCreate
+                    ? customers.length
+                      ? "All customers have active sessions. Create a new one below."
+                      : "No customers yet. Create one below."
+                    : emptyMessage}
                 </p>
               ) : !filtered.length ? (
                 <p className="g-muted g-customer-picker-empty">
@@ -380,9 +406,9 @@ export function CustomerSelectDropdown({
             </div>
           ) : null}
 
-          {!showCreateForm && customers.length > 0 ? (
+          {!showCreateForm && selectableCustomers.length > 0 ? (
             <p className="g-customer-dropdown-footer g-muted">
-              {filtered.length} of {customers.length} shown
+              {filtered.length} of {selectableCustomers.length} shown
             </p>
           ) : null}
         </div>

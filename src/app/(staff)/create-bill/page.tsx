@@ -18,12 +18,16 @@ export default function CreateBillPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
 
-  const availableCustomers = useMemo(() => {
-    const activeIds = new Set(activeSessions.map((s) => s.customerId));
-    return customers
-      .filter((c) => !activeIds.has(c.id))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [customers, activeSessions]);
+  const activeCustomerIds = useMemo(
+    () => activeSessions.map((s) => s.customerId),
+    [activeSessions]
+  );
+
+  const handleCreateCustomer = async (input: Parameters<typeof addCustomer>[0]) => {
+    const customer = await addCustomer(input);
+    setCustomerId(customer.id);
+    return customer;
+  };
 
   async function handleStart(e: React.FormEvent) {
     e.preventDefault();
@@ -64,21 +68,18 @@ export default function CreateBillPage() {
       <form onSubmit={handleStart} className="g-card" style={{ display: "grid", gap: "0.95rem" }}>
         <Field label="Customer profile">
           <CustomerSelectDropdown
-            customers={availableCustomers}
+            customers={customers}
+            excludeCustomerIds={activeCustomerIds}
             selectedId={customerId}
             onSelect={setCustomerId}
-            onCreateCustomer={addCustomer}
-            disabled={availableCustomers.length === 0 && customers.length > 0}
+            onCreateCustomer={handleCreateCustomer}
+            disabled={customers.length > 0 && activeCustomerIds.length === customers.length}
             placeholder={
-              availableCustomers.length === 0 && customers.length > 0
+              customers.length > 0 && activeCustomerIds.length === customers.length
                 ? "All customers have active sessions"
                 : "Search or create customer…"
             }
-            emptyMessage={
-              availableCustomers.length === 0 && customers.length > 0
-                ? "All customers currently have active sessions."
-                : "No customers match your search."
-            }
+            emptyMessage="No customers match your search."
           />
         </Field>
 

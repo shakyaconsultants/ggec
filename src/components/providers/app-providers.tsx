@@ -171,7 +171,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       const data = (await res.json()) as { customer?: Customer };
       const customer = data.customer;
       if (!customer) throw new Error("Invalid response while creating customer.");
-      setCustomers((prev) => [...prev, customer].sort((a, b) => a.name.localeCompare(b.name)));
+      setCustomers((prev) => {
+        if (prev.some((c) => c.id === customer.id)) {
+          return prev.map((c) => (c.id === customer.id ? customer : c));
+        }
+        return [...prev, customer].sort((a, b) => a.name.localeCompare(b.name));
+      });
       return customer;
     },
     []
