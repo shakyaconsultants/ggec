@@ -11,7 +11,7 @@ import {
 } from "@/lib/invoice";
 import { lineTotal } from "@/lib/food";
 import { printInvoice } from "@/lib/invoice-print";
-import { formatDuration, GAME_LABELS, HOURLY_RATE } from "@/lib/pricing";
+import { formatDuration, GAME_LABELS, GAMING_PRICING_SUMMARY, GAMING_RATE_LABEL } from "@/lib/pricing";
 
 export function SessionInvoice({ bill, showActions = true, onClose, compact }: InvoiceProps) {
   const foodItems = bill.foodItems ?? [];
@@ -82,7 +82,7 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
           <tr>
             <td>Gaming session — {GAME_LABELS[bill.gameType]}</td>
             <td>{formatDuration(bill.durationHours)}</td>
-            <td>{formatMoney(HOURLY_RATE)}/hr</td>
+            <td>{GAMING_RATE_LABEL}</td>
             <td>{formatMoney(bill.gamingAmount)}</td>
           </tr>
           {foodItems.map((line) => (
@@ -115,7 +115,7 @@ export function SessionInvoice({ bill, showActions = true, onClose, compact }: I
       </table>
 
       <p className="g-invoice-footer">
-        Thank you for visiting {BRAND_FULL_NAME}. Gaming: Rs {HOURLY_RATE}/hour
+        Thank you for visiting {BRAND_FULL_NAME}. {GAMING_PRICING_SUMMARY}
         {hasFood ? " · Food billed separately" : ""} · Session ID: {bill.id.slice(0, 8)}
       </p>
 

@@ -11,7 +11,7 @@ const inputClass = "g-input";
 const GAMES: GameType[] = ["ps2", "ps3", "ps4", "ps5", "system"];
 
 export default function CreateBillPage() {
-  const { customers, activeSessions, startSession } = useApp();
+  const { customers, activeSessions, startSession, addCustomer } = useApp();
   const [customerId, setCustomerId] = useState("");
   const [gameType, setGameType] = useState<GameType>("ps5");
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export default function CreateBillPage() {
           Start session
         </h1>
         <p className="g-muted" style={{ marginTop: "0.35rem", fontSize: "0.92rem" }}>
-          Pick a customer and station to begin. Timer and food orders are handled on{" "}
+          Search for a customer or create one inline, then pick a station. Timer and food orders are handled on{" "}
           <Link href="/active-sessions" style={{ color: "#34d399", textDecoration: "none" }}>
             Active sessions
           </Link>
@@ -61,36 +61,26 @@ export default function CreateBillPage() {
         </p>
       </div>
 
-      {!customers.length ? (
-        <div className="g-card" style={{ padding: "1.5rem", textAlign: "center" }}>
-          <p className="g-muted" style={{ margin: 0 }}>
-            No customer profiles yet.{" "}
-            <Link href="/customers" style={{ color: "#34d399", textDecoration: "none" }}>
-              Create a profile
-            </Link>{" "}
-            before starting a session.
-          </p>
-        </div>
-      ) : (
-        <form onSubmit={handleStart} className="g-card" style={{ display: "grid", gap: "0.95rem" }}>
-          <Field label="Customer profile">
-            <CustomerSelectDropdown
-              customers={availableCustomers}
-              selectedId={customerId}
-              onSelect={setCustomerId}
-              disabled={availableCustomers.length === 0}
-              placeholder={
-                availableCustomers.length === 0
-                  ? "All customers have active sessions"
-                  : "Select customer…"
-              }
-              emptyMessage={
-                availableCustomers.length === 0
-                  ? "All customers currently have active sessions."
-                  : "No customers match your search."
-              }
-            />
-          </Field>
+      <form onSubmit={handleStart} className="g-card" style={{ display: "grid", gap: "0.95rem" }}>
+        <Field label="Customer profile">
+          <CustomerSelectDropdown
+            customers={availableCustomers}
+            selectedId={customerId}
+            onSelect={setCustomerId}
+            onCreateCustomer={addCustomer}
+            disabled={availableCustomers.length === 0 && customers.length > 0}
+            placeholder={
+              availableCustomers.length === 0 && customers.length > 0
+                ? "All customers have active sessions"
+                : "Search or create customer…"
+            }
+            emptyMessage={
+              availableCustomers.length === 0 && customers.length > 0
+                ? "All customers currently have active sessions."
+                : "No customers match your search."
+            }
+          />
+        </Field>
 
           <Field label="Game station">
             <select
@@ -111,13 +101,12 @@ export default function CreateBillPage() {
               type="submit"
               className="g-btn-primary"
               style={{ cursor: "pointer" }}
-              disabled={starting || !availableCustomers.length || !customerId}
+              disabled={starting || !customerId}
             >
               {starting ? "Starting…" : "Start session"}
             </button>
           </div>
         </form>
-      )}
 
       {success ? (
         <p style={{ margin: 0, borderRadius: 12, border: "1px solid #14532d", background: "#052e16", color: "#bbf7d0", padding: "0.7rem 0.85rem", fontSize: "0.9rem" }}>

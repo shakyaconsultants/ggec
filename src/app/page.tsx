@@ -11,7 +11,7 @@ import {
   CAFE_TAGLINE_SHORT,
   MARKETING_STATS,
 } from "@/lib/brand";
-import { HOURLY_RATE } from "@/lib/pricing";
+import { GAMING_PRICING_SUMMARY, MIN_SESSION_CHARGE } from "@/lib/pricing";
 
 const hero =
   "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2000&q=85";
@@ -40,7 +40,7 @@ const amenities = [
   { icon: "◈", title: "Premium stations", text: "Clean rigs, tuned displays, and controllers ready before you sit down." },
   { icon: "◎", title: "Ambient lounge", text: "Neon-lit atmosphere designed for long sessions and squad hangouts." },
   { icon: "▣", title: "Cafe menu", text: "Snacks and drinks added to your tab without breaking your game flow." },
-  { icon: "◉", title: "Smart billing", text: "Sessions timed to the minute with transparent Rs 100/hour pricing." },
+  { icon: "◉", title: "Smart billing", text: "Minimum Rs 100 first hour, then tiered per-minute pricing with precise session timing." },
   { icon: "◇", title: "Member dashboard", text: "Track hours, spend, favourite stations, and every invoice online." },
   { icon: "✦", title: "Event-ready", text: "Birthdays, mini tourneys, and group nights — we scale with your crew." },
 ];
@@ -52,7 +52,7 @@ const faqs = [
   },
   {
     q: "How does pricing work?",
-    a: `Every station is Rs ${HOURLY_RATE} per hour with precise session timing. Food is added separately and appears on the same invoice.`,
+    a: GAMING_PRICING_SUMMARY + " Food is added separately and appears on the same invoice.",
   },
   {
     q: "Can I order food during a session?",
@@ -110,9 +110,9 @@ export default function Home() {
             <div className="g-home-hero-panel">
               <div className="g-home-hero-panel-top">
                 <BrandLogo size="lg" showName={false} />
-                <p className="g-home-hero-panel-label">Session rate</p>
-                <p className="g-home-hero-panel-price font-display">Rs {HOURLY_RATE}</p>
-                <p className="g-muted g-home-hero-panel-note">per hour · all platforms</p>
+                <p className="g-home-hero-panel-label">From</p>
+                <p className="g-home-hero-panel-price font-display">Rs {MIN_SESSION_CHARGE}</p>
+                <p className="g-muted g-home-hero-panel-note">minimum · first hour · all platforms</p>
               </div>
               <ul className="g-home-hero-panel-list">
                 <li>PS2 · PS3 · PS4 · PS5 · PC</li>
@@ -241,22 +241,23 @@ export default function Home() {
           <div className="g-home-pricing-card g-home-pricing-card-premium">
             <div className="g-home-pricing-copy">
               <p className="g-eyebrow">Transparent pricing</p>
-              <h2 className="font-display g-home-section-title">One rate. Every station. Zero confusion.</h2>
+              <h2 className="font-display g-home-section-title">Fair tiers. Every station. Zero confusion.</h2>
               <p className="g-muted g-home-pricing-desc">
-                No hidden tiers between PS2 and PS5. Sessions run on precision timers; food orders
-                stack cleanly on your final bill. Professional receipts every time.
+                Start at Rs {MIN_SESSION_CHARGE} for your first hour on any platform. After that, tiered
+                per-minute pricing applies each hour. Food orders stack cleanly on your final bill.
               </p>
               <ul className="g-home-pricing-features">
-                <li>Flat Rs {HOURLY_RATE}/hour across all platforms</li>
+                <li>Rs 100 per completed hour (2h = Rs 200, 3h = Rs 300)</li>
+                <li>Mid-hour exit: Rs 2/min for up to 45 min (1h 40m = Rs 180)</li>
                 <li>Minute-accurate session tracking</li>
                 <li>Food + gaming on one invoice</li>
                 <li>Full history in your member dashboard</li>
               </ul>
             </div>
             <div className="g-home-price-box g-home-price-box-premium">
-              <span className="g-home-price-label">Standard rate</span>
-              <span className="g-home-price-value font-display">Rs {HOURLY_RATE}</span>
-              <span className="g-home-price-note">per hour · all stations</span>
+              <span className="g-home-price-label">Starting from</span>
+              <span className="g-home-price-value font-display">Rs {MIN_SESSION_CHARGE}</span>
+              <span className="g-home-price-note">first hour · tiered after that</span>
               <Link href="/login" className="g-btn-primary g-home-price-cta">
                 Access your profile
               </Link>

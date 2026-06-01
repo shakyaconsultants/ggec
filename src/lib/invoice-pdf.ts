@@ -2,7 +2,7 @@ import PDFDocument from "pdfkit";
 import { BRAND_FULL_NAME } from "@/lib/brand";
 import { lineTotal } from "@/lib/food";
 import { formatDateTime, formatMoney, invoiceNumber } from "@/lib/invoice";
-import { formatDuration, GAME_LABELS, HOURLY_RATE } from "@/lib/pricing";
+import { formatDuration, GAME_LABELS, GAMING_RATE_LABEL } from "@/lib/pricing";
 import type { Bill } from "@/lib/types";
 
 function collectPdfBuffer(doc: InstanceType<typeof PDFDocument>): Promise<Buffer> {
@@ -60,7 +60,7 @@ export async function generateInvoicePdf(bill: Bill): Promise<Buffer> {
   doc.fontSize(10).fillColor("#333333");
   doc.text(`Gaming — ${GAME_LABELS[bill.gameType]}`, colDesc, rowY, { width: 220 });
   doc.text(formatDuration(bill.durationHours), colQty, rowY);
-  doc.text(`${formatMoney(HOURLY_RATE)}/hr`, colRate, rowY);
+  doc.text(GAMING_RATE_LABEL, colRate, rowY);
   doc.text(formatMoney(bill.gamingAmount), colAmount, rowY);
   rowY += 20;
 

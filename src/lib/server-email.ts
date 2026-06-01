@@ -3,7 +3,7 @@ import { BRAND_FULL_NAME, BRAND_NAME } from "@/lib/brand";
 import { env } from "@/lib/env";
 import { lineTotal } from "@/lib/food";
 import { formatDateTime, formatMoney, invoiceNumber } from "@/lib/invoice";
-import { formatDuration, GAME_LABELS, HOURLY_RATE } from "@/lib/pricing";
+import { formatDuration, GAME_LABELS, GAMING_PRICING_SUMMARY } from "@/lib/pricing";
 import type { Bill } from "@/lib/types";
 type WelcomeEmailInput = {
   name: string;
@@ -249,7 +249,7 @@ function buildSessionInvoiceEmailHtml(bill: Bill, email: string): string {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #27272a;border-radius:12px;overflow:hidden;">
                 <tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;width:120px;">Station</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(GAME_LABELS[bill.gameType])}</td></tr>
                 <tr><td style="padding:12px 14px;background:#18181b;color:#a1a1aa;">Duration</td><td style="padding:12px 14px;background:#18181b;color:#fafafa;font-weight:600;">${escapeHtml(formatDuration(bill.durationHours))}</td></tr>
-                <tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;">Gaming rate</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(formatMoney(HOURLY_RATE))}/hour</td></tr>
+                <tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;">Gaming rate</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(GAMING_PRICING_SUMMARY)}</td></tr>
                 <tr><td style="padding:12px 14px;background:#18181b;color:#a1a1aa;">Gaming subtotal</td><td style="padding:12px 14px;background:#18181b;color:#fafafa;font-weight:600;">${escapeHtml(formatMoney(bill.gamingAmount))}</td></tr>
                 ${hasFood ? `<tr><td style="padding:12px 14px;background:#09090b;color:#a1a1aa;">Food total</td><td style="padding:12px 14px;background:#09090b;color:#fafafa;font-weight:600;">${escapeHtml(formatMoney(bill.foodTotal))}</td></tr>` : ""}
               </table>

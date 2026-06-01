@@ -2,7 +2,7 @@ import type { Collection } from "mongodb";
 import type { Bill, BillStatus, GameType, SessionFoodLine } from "@/lib/types";
 import { sumFoodTotal } from "@/lib/food";
 import { getDb } from "@/lib/mongodb";
-import { computeAmount, elapsedHours } from "@/lib/pricing";
+import { computeSessionGamingAmount, elapsedHours } from "@/lib/pricing";
 import { getCustomerById, incrementCustomerStats } from "@/lib/server-customers";
 import { sendSessionInvoiceEmail } from "@/lib/server-email";
 import { getFoodItemById } from "@/lib/server-food";
@@ -188,7 +188,7 @@ export async function endSession(billId: string): Promise<Bill> {
 
   const endedAt = new Date().toISOString();
   const durationHours = elapsedHours(bill.startedAt, endedAt);
-  const gamingAmount = computeAmount(bill.gameType, durationHours);
+  const gamingAmount = computeSessionGamingAmount(bill.startedAt, endedAt);
   const foodTotal = sumFoodTotal(bill.foodItems);
   const amount = Math.round((gamingAmount + foodTotal) * 100) / 100;
 
